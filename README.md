@@ -4,6 +4,8 @@ One shared store of Claude Code subagents, skills, rules and hooks for every mac
 
 A *lumbung* is the rice barn a village shares: everyone stores in it and takes from it, so nobody keeps their own pile. Lumbung does the same for agents. A good agent written on the VM is there on the laptop next session, and a new repo uses the agent that already exists instead of growing its own copy.
 
+**Why it exists:** I work on a VM, a laptop and a PC. The agent I needed was always on the other machine, every new repo grew its own copies of agents that already existed, and I had no idea which agents were actually used. The full story is in [docs/background.md](docs/background.md).
+
 ## What it does
 
 - **Same kit everywhere.** Agents and skills live in this repo. `install.py` copies them into `~/.claude`, and a SessionStart hook pulls and reinstalls whenever `master` moves.
@@ -55,6 +57,7 @@ Repo-bound agents (for example `marketer` in `/root/marketing`) stay in their re
 
 ## Documentation
 
+- [docs/background.md](docs/background.md): why I built this, and how the design got where it is
 - [docs/setup.md](docs/setup.md): installing on each machine, choosing the remote, credentials, uninstalling
 - [docs/workflow.md](docs/workflow.md): adding, developing, releasing and retiring agents and skills
 - [docs/how-it-works.md](docs/how-it-works.md): files, hooks, the duplicate guard, sync and usage logging in detail
