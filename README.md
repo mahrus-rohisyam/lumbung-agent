@@ -2,7 +2,28 @@
 
 Satu sumber untuk agent, skill, aturan, dan hook Claude Code yang dipakai di semua mesin: VM (pusat), laptop, dan komputer.
 
-Status: **brainstorm / rancangan**. Belum ada yang dipasang. Langkah implementasi ada di [DESIGN.md](DESIGN.md#rencana-implementasi).
+Status (2026-11-14): **terpasang di VM**. Laptop dan komputer belum. Rancangan dan pertanyaan terbuka ada di [DESIGN.md](DESIGN.md).
+
+## Pemasangan
+
+**VM (sudah):** `python3 /root/agent-harness/install.py --host vm`
+
+**Laptop / komputer (PowerShell):**
+
+```powershell
+git clone root@<vm>:/root/agent-harness $HOME\agent-harness
+python $HOME\agent-harness\install.py --hub root@<vm> --host laptop   # atau --host komputer
+```
+
+`<vm>` = host atau alias SSH yang biasa dipakai untuk konek ke VM (harus bisa tanpa password). Setelah itu sinkron jalan sendiri tiap sesi Claude Code dimulai.
+
+**Membatalkan:** `python install.py --uninstall` (settings lama juga dibackup di `~/.claude/agent-harness/settings.json.before-agent-harness`).
+
+## Pemakaian sehari-hari
+
+- Ubah atau tambah agent/skill umum di `agents/` atau `skills/`, perbarui `REGISTRY.md`, commit. Di laptop/komputer: `git push` juga. Mesin lain mengambilnya di sesi berikutnya.
+- Lihat pemakaian (di VM): `python3 /root/agent-harness/report.py --days 30`.
+- `core-template` memakai agent dan skill ini lewat symlink, jadi `sync-agent-kit.py` menyalin versi kit ke repo core.
 
 ## Masalah
 
