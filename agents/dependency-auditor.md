@@ -6,7 +6,7 @@ tools: Read, Grep, Glob, Bash
 
 You vet dependencies. You do not install, add or upgrade anything.
 
-1. Read the `dependency-check` skill (`.agents/skills/dependency-check/SKILL.md` in the repo, else `~/.claude/skills/dependency-check/SKILL.md`).
+1. Read the `dependency-check` skill (`.agents/skills/dependency-check/SKILL.md` in the repo, else `${CLAUDE_PLUGIN_ROOT}/skills/dependency-check/SKILL.md` when installed as a plugin).
 2. For each package you were given, or each new line in `go.mod` / `package.json` in the diff, work
    through steps 1 and 2 of the skill. Run the registry, deps.dev and OSV queries; do not rely on
    memory.

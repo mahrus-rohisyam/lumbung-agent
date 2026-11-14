@@ -2,106 +2,91 @@
 
 ## Repository layout
 
+The repo is both a marketplace and the one plugin it lists.
+
 ```
-lumbung/
-├── README.md
-├── REGISTRY.md          # every agent and skill; the guard parses the Agents table
-├── agents/              # kit agents       -> ~/.claude/agents/
-├── skills/              # kit skills       -> ~/.claude/skills/
-├── rules/CLAUDE.md      # rules block      -> ~/.claude/CLAUDE.md
+lumbung-agent/
+├── .claude-plugin/
+│   ├── marketplace.json    # marketplace "lumbung-agent", one entry: plugin "lumbung", source "./"
+│   └── plugin.json         # plugin "lumbung"; no version, so Claude Code tracks commits
+├── agents/                 # subagents      -> lumbung:<name>
+├── skills/                 # skills         -> lumbung:<name>
+├── commands/report.md      # /lumbung:report
 ├── hooks/
-│   ├── common.py        # paths, git helper, registry and frontmatter parsing
-│   ├── sync.py          # SessionStart
-│   ├── guard_agent.py   # PreToolUse (Write|Edit|MultiEdit)
-│   └── log_usage.py     # SubagentStart, SubagentStop
-├── install.py
-├── report.py
+│   ├── hooks.json          # hook registrations
+│   ├── run.sh              # finds a working Python, then runs a hook script
+│   ├── common.py           # paths, registry and frontmatter parsing
+│   ├── guard_agent.py      # duplicate guard
+│   └── log_usage.py        # usage log
+├── rules/rules.md          # rules text loaded into every session
+├── scripts/report.py       # usage summary
+├── REGISTRY.md
 └── docs/
 ```
 
-Branches: `master` (what every machine runs), `feature/*` (work in progress), `usage` (logs only; see below).
+Branches: `master` is the release. `feature/*` is work in progress.
 
-All scripts are Python standard library, so the same files run on Linux and Windows.
+## Installing and updating
+
+Claude Code does both. On install it copies the plugin into `~/.claude/plugins/cache/lumbung-agent/lumbung/<version>/`, where `<version>` is the first 12 characters of the commit SHA. With auto-update on for the marketplace, it re-checks the remote in the background after a session starts. A new commit means a new version: a new cache folder, loaded from the next session on. Old version folders are removed 14 days later.
+
+A marketplace added from a local path (the VM, until it has GitHub access) is different. The plugin is loaded **in place** from that folder at every session start, with no copy and no version check.
 
 ## Hooks
 
-`install.py` registers each hook in the exec form, not as a shell string:
+`hooks/hooks.json` registers four hooks. Claude Code substitutes `${CLAUDE_PLUGIN_ROOT}` with the plugin's folder.
 
-```json
-{"type": "command", "command": "/usr/bin/python3", "args": ["/root/lumbung/hooks/sync.py"], "timeout": 30}
-```
-
-`command` is the Python that ran `install.py`, and `args` is the absolute path to the script. No shell sits in between, so quoting and Windows path problems do not arise. The codebase-memory-mcp hooks already in `settings.json` use the same form.
-
-| Event | Matcher | Script | Timeout |
+| Event | Matcher | Runs | Timeout |
 |---|---|---|---|
-| SessionStart | `startup` | `sync.py` | 30 s |
+| SessionStart | `startup\|resume\|clear\|compact` | `cat rules/rules.md` | 5 s |
 | PreToolUse | `Write\|Edit\|MultiEdit` | `guard_agent.py` | 10 s |
 | SubagentStart | `*` | `log_usage.py` | 5 s |
 | SubagentStop | `*` | `log_usage.py` | 5 s |
 
-Every script catches its own errors and exits quietly. A broken Lumbung must never break a session.
+**Rules.** Plain text on a SessionStart hook's stdout becomes context for Claude. That is how the rules arrive, because a plugin cannot ship a `CLAUDE.md`. The matcher includes `resume`, `clear` and `compact`, so the rules come back after `/clear` and after compaction.
 
-## Sync (`sync.py`)
+**Running Python on Linux and Windows.** The hooks are shell-form commands (`sh run.sh <script>`). On Linux they run in `sh`, on Windows in Git Bash. `run.sh` tries `python3`, `python` and `py -3` in turn. It runs a one-line check with each and uses the first that passes, because on Windows `python3` is often the Microsoft Store stub that exists but does not run anything. It then `exec`s the script with the hook input still on stdin. If no Python works, it exits 0 and the hook does nothing. Exec form (`command` + `args`) would avoid the shell, but it needs one fixed executable name, and no single name exists on all three machines.
 
-At each new session (`startup` only, not resume or compact):
-
-1. If the clone has an `origin`, `git fetch origin` (8 s limit).
-2. On `master`: fast-forward to `origin/master`. Local commits that are not pushed are kept; if the branches have diverged, nothing happens until you sort it out by hand.
-3. On any other branch: no update. It prints a develop-mode reminder, which Claude sees at the start of the session.
-4. If `HEAD` differs from the commit recorded at the last install, it runs `install.py --quiet`. When the update came from the remote, it prints a one-line summary of the new commits.
-5. Publishes this machine's usage log (below).
-
-Git runs with `GIT_TERMINAL_PROMPT=0` and no stdin, so it fails instead of waiting for a password.
-
-Agents are read when a session starts, so an update becomes visible in the next session after the one that pulled it. That one session of lag is the price of not slowing every session down with a second pass.
+Every Python script catches its own errors and exits 0. A broken Lumbung must never break a session.
 
 ## Duplicate guard (`guard_agent.py`)
 
-Runs before every Write, Edit or MultiEdit. It does nothing unless the target is `*/.claude/agents/*.md` or this repo's `agents/*.md`. For those files, it works out the file's content after the edit, reads its frontmatter, and decides:
+Runs before every Write, Edit or MultiEdit:
 
 | Situation | Result |
 |---|---|
-| The file is an installed copy in `~/.claude/agents` that came from Lumbung | **Deny**: edit the kit instead |
-| The file already exists and keeps its `name` (an ordinary edit) | Allow |
-| The `name` is already used by another agent file the guard can see | **Deny** |
+| The target is under `~/.claude/plugins/cache/` or `~/.claude/plugins/marketplaces/` | **Deny**: that copy is managed by Claude Code; edit the clone |
+| The target is not an agent file | Allow, no checks |
+| The file exists and keeps its `name` (an ordinary edit) | Allow |
+| The `name` is used by another agent file the guard can see | **Deny** |
 | The `name` is in the registry for a different location | **Deny** |
 | The description overlaps strongly with an existing agent | **Deny**, naming the agent and the shared terms |
 | The frontmatter has `# lumbung-override: <reason>` | Skip the three checks above |
 | The `name` is not in the registry | Allow, and tell Claude to add a registry row |
 
-**Agents it can see:** this repo's `agents/`, `~/.claude/agents/`, and the `.claude/agents/` of every repo path in the registry that exists on this machine. On Windows the VM's repo paths do not exist, so for repo-bound agents only the registry row is checked. That is why every agent needs a row.
+**Agent files:** `*/.claude/agents/*.md`, and `agents/*.md` in any folder that has `.claude-plugin/plugin.json`, such as a Lumbung clone.
 
-**Registered first is fine.** If the registry row for the name points to where the file is being written (`kit` and the target is `agents/`, or the target is inside the row's repo path), the name check passes. You can add the row before writing the file.
+**Agents it can see:** the plugin's own `agents/` (the installed copy, or the clone under `--plugin-dir`), `~/.claude/agents/`, and the `.claude/agents/` of every repo path in the registry that exists on this machine. On Windows the VM's repo paths do not exist, so for repo-bound agents only the registry row is checked. That is why every agent needs a row.
 
-**Overlap measure:** words of three or more letters from the name, description and registry Purpose, minus common stop words, each cut to its first six letters (a crude stem, so `review`, `reviewer` and `reviews` match). The score is shared terms divided by the size of the smaller set. A block needs a score of 0.5 or more and at least three shared terms. Both values are constants at the top of the file. In testing it caught a "code security auditor", an "AI slop checker" and a "social content" agent against `security-reviewer`, `slop-reviewer` and `marketer`, and let a report writer and a DB migration agent through.
+**Registered first is fine.** If the registry row for the name points where the file is being written (`kit` and the target is the `agents/` folder of the `lumbung` plugin, or the target is inside the row's repo path), the name check passes. You can add the row before writing the file.
 
-The guard is a speed bump, not a lock. Claude or a person can always write the file another way. The registry and the rules in `CLAUDE.md` matter as much as the hook.
+**Overlap measure:** words of three or more letters from the name, description and registry Purpose, minus common stop words, each cut to its first six letters (a crude stem, so `review`, `reviewer` and `reviews` match). The score is shared terms divided by the size of the smaller set. A block needs a score of at least 0.5 and at least three shared terms. Both are constants at the top of the file. In testing it caught a "code security auditor", an "AI slop checker" and a "social content" agent against `security-reviewer`, `slop-reviewer` and `marketer`, and let a report writer and a DB migration agent through.
 
-## Usage logging
+The guard is a speed bump, not a lock: a file can always be written another way. The registry and the rules matter as much as the hook.
 
-**Recording (`log_usage.py`).** Each SubagentStart and SubagentStop appends one line to `~/.claude/lumbung/usage.jsonl`:
+## Usage log
+
+`log_usage.py` appends one line per SubagentStart and SubagentStop to `usage.jsonl` in the plugin's data folder, `${CLAUDE_PLUGIN_DATA}` (`~/.claude/plugins/data/lumbung-lumbung-agent/`). That folder survives plugin updates and is deleted on uninstall unless you pass `--keep-data`.
 
 ```json
-{"ts": "2026-11-14T09:12:03Z", "host": "laptop", "event": "start", "agent": "slop-reviewer",
- "agent_id": "a1b2", "session": "…", "cwd": "C:\\work\\report"}
+{"ts": "2026-11-14T15:28:52Z", "host": "server", "event": "start", "agent": "Explore",
+ "agent_id": "a83f6d26fd9d5982f", "session": "35d16e32-…", "cwd": "/root/ajir"}
 ```
 
-Built-in agents are logged too (`Explore`, `Plan`, `general-purpose`), so you can see how much custom agents are used next to them.
+`agent` is the subagent type as Claude Code reports it: `lumbung:slop-reviewer` for this plugin's agents, plain names for built-in (`Explore`, `Plan`, `general-purpose`) and repo agents.
 
-**Publishing (in `sync.py`).** Each machine owns one file on the `usage` branch: `usage/<host>.jsonl`, holding that machine's whole log. At session start, sync:
+The log stays on the machine. `/lumbung:report` runs `scripts/report.py`, which prints runs per agent with last use, machine and top repos ("repo" is the last folder of `cwd`). It then lists registry entries unused in the period, agents used in two or more repos that have no registry row, and agents used in three or more repos. To look across machines, copy other machines' `usage.jsonl` files over and pass them as extra arguments:
 
-1. stores the local log as a git blob,
-2. stops if `origin/usage` (or the local `usage` branch when there is no remote) already has exactly that content,
-3. otherwise builds a commit on top of that tip that replaces only its own file, using a temporary index, so the working tree and the current branch are never touched,
-4. pushes `usage` to `origin`.
-
-Machines never write each other's files, so there are no merge conflicts. If a push is rejected because another machine pushed first, the next session rebuilds on the new tip. The log only grows, and replacing the whole file means a lost push loses nothing.
-
-On the VM-as-remote setup, Windows machines push `usage` into the VM repo, and the VM's own sync commits its file onto that same local branch.
-
-**Reporting (`report.py`).** Fetches `origin`, then reads this machine's local log plus every other `usage/<host>.jsonl` from `origin/usage` (or local `usage`). Prints runs per agent with last use, machines and top repos ("repo" is the last folder of `cwd`), then three lists: registry entries unused in the period, agents used in two or more repos that have no registry row, and agents used in three or more repos.
-
-## Install manifest
-
-`~/.claude/lumbung/manifest.json` lists the agent and skill names the last install put in place. The next install removes names that left the kit and replaces the ones still there. Files in `~/.claude/agents` and `~/.claude/skills` that are not in the manifest are never touched, apart from the warned-about name clash described in [setup.md](setup.md).
+```bash
+python3 scripts/report.py --days 90 laptop-usage.jsonl pc-usage.jsonl
+```

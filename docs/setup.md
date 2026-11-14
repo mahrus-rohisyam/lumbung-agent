@@ -2,96 +2,93 @@
 
 ## Requirements
 
-- Claude Code on the machine.
-- Python 3.8 or later. Lumbung uses the standard library only; nothing to `pip install`.
-- Git, and passwordless access to the `origin` remote (SSH key or a credential helper). Hooks run without a terminal, so git can never ask for a password; if it would, sync silently does nothing.
+- **Claude Code 2.1.275 or later** for the one-line install. Older versions use the two-step install below.
+- **Git**, with read access to the private repo `mahrus-rohisyam/lumbung-agent` that works without a prompt. See [Access to the private repo](#access-to-the-private-repo).
+- **Python 3.8 or later** on the machine. The guard and the usage log are small Python scripts that the plugin's hooks run; you never run them yourself. The plugin finds whichever of `python3`, `python` or `py -3` works. Without Python, the agents, skills and rules still work, and only the guard and the log stay silent.
+- **Windows:** Git for Windows, which includes Git Bash. Claude Code runs plugin hooks through it.
 
-## 1. Choose the remote
+## Install
 
-All machines sync through the `origin` remote of their clone. Two setups work; the code is the same for both.
+In a Claude Code session:
 
-| Remote | Works when | Notes |
+```
+/plugin install lumbung --marketplace mahrus-rohisyam/lumbung-agent
+```
+
+Claude Code adds the `lumbung-agent` marketplace, shows what the plugin adds, and asks for a scope. Choose **Install for you (user scope)** so it works in every project on the machine.
+
+Two-step form, for older versions or from a shell:
+
+```
+claude plugin marketplace add mahrus-rohisyam/lumbung-agent
+claude plugin install lumbung@lumbung-agent
+```
+
+### Turn on auto-update
+
+Auto-update is off by default for any marketplace that is not Anthropic's. Turn it on once per machine: `/plugin` → **Marketplaces** → `lumbung-agent` → **Enable auto-update**.
+
+With it on, Claude Code checks for new commits in the background shortly after a session starts (after your first message, within about ten minutes). It downloads the update and says `Plugin updated: lumbung · Run /reload-plugins to apply`. The next session uses the new version either way.
+
+There is no `version` in `plugin.json` on purpose: Claude Code then tracks commits, so every push to `master` is a release.
+
+### Check it
+
+```
+/agents                  # lists lumbung:security-reviewer and the others
+/lumbung:report          # prints the usage summary (empty at first)
+```
+
+Or from a shell: `claude plugin list` shows `lumbung@lumbung-agent` with `Status: ✔ enabled`.
+
+## Access to the private repo
+
+Claude Code clones the marketplace with the git credentials already on the machine and never prompts. Set one of these up once per machine.
+
+**SSH key (simplest on the VM)**
+
+1. `ssh-keygen -t ed25519 -C "<machine name>"`, with no passphrase, or one loaded in `ssh-agent`.
+2. Add the public key to GitHub: **Settings → SSH and GPG keys**.
+3. `ssh -T git@github.com` must greet you without a prompt. That run also adds github.com to `known_hosts`.
+
+With `owner/repo` shorthand, Claude Code tries SSH first and falls back to HTTPS.
+
+**HTTPS with a stored credential (simplest on Windows)**
+
+Git for Windows ships Git Credential Manager. Store a credential once by cloning the repo in PowerShell and signing in through the browser window it opens:
+
+```powershell
+git clone https://github.com/mahrus-rohisyam/lumbung-agent $HOME\lumbung-agent
+```
+
+The clone is also what you use to develop agents ([workflow.md](workflow.md)). If the machine has no GitHub SSH key, set `CLAUDE_CODE_PLUGIN_PREFER_HTTPS=1` in the user environment variables so Claude Code goes straight to HTTPS. Without it, installs from `/plugin` and updates do not fall back on their own.
+
+The alternative is `gh auth login`, then `gh auth setup-git`.
+
+A `GITHUB_TOKEN` environment variable alone does not work: Claude Code uses git's credential helpers, not tokens.
+
+## Machines
+
+| Machine | Install from | Notes |
 |---|---|---|
-| **The VM** (`root@<vm>:/root/lumbung`) | The machine can SSH to the VM | No third party. Syncing stops when the VM is down or unreachable. The VM's own checkout has no `origin`. |
-| **Private GitHub or GitLab repo** | The machine has internet | Works without the VM. Every machine, the VM included, clones from it. Gives an off-machine backup. |
+| VM | GitHub, once the VM has an SSH key. Until then, from the local clone: `claude plugin marketplace add /root/lumbung-agent` | Added from a local path, the plugin loads in place: the VM runs whatever is checked out in `/root/lumbung-agent`, at every session start |
+| Laptop | GitHub | HTTPS with Git Credential Manager |
+| PC | GitHub | HTTPS with Git Credential Manager |
 
-The repo must be **private**: the registry contains local paths and machine names, and usage logs contain working-directory paths.
+To move the VM from the local path to GitHub:
 
-### VM as the remote (current setup)
-
-The VM repo accepts pushes to its checked-out branch:
-
-```bash
-git -C /root/lumbung config receive.denyCurrentBranch updateInstead
+```
+claude plugin marketplace remove lumbung-agent
+claude plugin install lumbung --marketplace mahrus-rohisyam/lumbung-agent
 ```
 
-Clients use `root@<vm>:/root/lumbung` as `origin`. `<vm>` is whatever host or SSH alias you already use to reach the VM.
+Removing the marketplace uninstalls the plugin. The usage log in `~/.claude/plugins/data/lumbung-lumbung-agent/` survives only if you copy it aside first, because uninstalling deletes the plugin's data folder.
 
-### Moving to GitHub or GitLab
+## Remove
 
-1. Create an empty private repo (no README, no license).
-2. Give every machine access. One SSH key per machine, added to your account, is the simplest; Git Credential Manager on Windows also works with HTTPS.
-3. On the VM:
-   ```bash
-   cd /root/lumbung
-   git remote add origin <url>
-   git push -u origin master
-   git push origin usage          # if the usage branch exists
-   ```
-4. On each Windows machine that cloned from the VM:
-   ```powershell
-   git -C $HOME\lumbung remote set-url origin <url>
-   git -C $HOME\lumbung fetch origin
-   ```
-5. Optional: set `receive.denyCurrentBranch` back to the default on the VM, since nobody pushes to it any more.
-
-## 2. Install on the VM
-
-```bash
-python3 /root/lumbung/install.py --host vm
-```
-
-## 3. Install on the laptop and PC (PowerShell)
-
-```powershell
-git clone <origin-url> $HOME\lumbung
-python $HOME\lumbung\install.py --host laptop     # on the PC: --host pc
-```
-
-Check it:
-
-```powershell
-git -C $HOME\lumbung fetch origin     # must finish without a password prompt
-claude                                # new session; /agents should list the kit's agents
-```
-
-`--host` is the name in usage logs. Use one short, stable name per machine; it becomes the file name `usage/<host>.jsonl`. Without it, the machine's hostname is used.
-
-## What install.py changes
-
-Everything lives under `~/.claude` (`%USERPROFILE%\.claude` on Windows):
-
-| Path | Change |
-|---|---|
-| `agents/<name>.md` | Kit agents copied in. Only names in Lumbung's manifest are ever replaced or removed. |
-| `skills/<name>/` | Kit skills copied in, same rule. |
-| `CLAUDE.md` | The block from `rules/CLAUDE.md` between `<!-- BEGIN lumbung -->` and `<!-- END lumbung -->`. Text outside the block is kept. |
-| `settings.json` | Four hook entries whose script path points into this repo. Other hooks and settings are kept. The first install saves a copy as `lumbung/settings.json.before-lumbung`. |
-| `lumbung/` | `config.json` (host name, installed commit), `manifest.json`, `usage.jsonl`. |
-
-Running it again is safe: it removes its own entries first and adds them back.
-
-If an agent or skill with the same name already exists and did not come from Lumbung, install prints a warning and replaces it. Check the warning: that file was probably an older hand-made copy.
-
-## Uninstall
-
-```bash
-python3 install.py --uninstall
-```
-
-Removes the kit's agents and skills, the CLAUDE.md block and the hook entries. The usage log and the settings backup in `~/.claude/lumbung/` are kept; delete that folder by hand if you want them gone.
+`/plugin` → **Installed** → `lumbung` → **Uninstall**, or `claude plugin uninstall lumbung@lumbung-agent`. Add `--keep-data` to keep the usage log.
 
 ## Related setups
 
-- **core-template**: its `.claude/agents/{security-reviewer,slop-reviewer,dependency-auditor}.md` and `.agents/skills/{secure-coding,code-slop,no-ai-slop,dependency-check}` are symlinks into `/root/lumbung`. `sync-agent-kit.py` follows the links and writes real files into `core-backend` and `core-frontend`, so those public repos stay self-contained. Text in these shared agents and skills must stay free of personal setup details, because it ends up in public repos.
+- **core-template**: `.claude/agents/{security-reviewer,slop-reviewer,dependency-auditor}.md` and `.agents/skills/{secure-coding,code-slop,no-ai-slop,dependency-check}` are symlinks into `/root/lumbung-agent`. `sync-agent-kit.py` follows the links and writes real files into `core-backend` and `core-frontend`, so those public repos stay self-contained. Keep the text of these shared files free of personal setup details, because it ends up in public repos. Inside those repos the agents also exist without the `lumbung:` prefix; that is expected.
 - **codebase-memory-mcp** installs its own agents, skills and hooks into `~/.claude`. Lumbung never touches them.

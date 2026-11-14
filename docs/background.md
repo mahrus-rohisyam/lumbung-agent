@@ -31,9 +31,13 @@ So I end up using Claude Code on three machines, not one.
 
 The first idea was to make the VM the hub: everything lives there, and the laptop and PC pull from it over SSH. That matched how I already work. It also meant that the moment I was away from the VM, or the VM was down, syncing stopped.
 
-Then the obvious question: why not just put it in git? A git remote is something every machine can reach without depending on the VM. The code was changed so each machine only talks to its `origin` remote. Today that is the VM; moving to a private GitHub or GitLab repo is a one-line change per machine. Usage logs went on their own branch for the same reason: no service to run, nothing that has to be reachable.
+Then the obvious question: why not just put it in git? A git remote is something every machine can reach without depending on the VM. The code was changed so each machine only talked to its `origin` remote, and usage logs went on their own branch so no service had to run anywhere.
 
-The last question was about agents still in development. If every machine follows the repo, a half-finished agent would spread everywhere the moment I committed it. So only `master` is shared. New work happens on a branch, on one machine, and reaches the others only when I merge it.
+The next question was about agents still in development. If every machine follows the repo, a half-finished agent would spread everywhere the moment I committed it. So only `master` is shared. New work happens on a branch, and reaches the other machines only when I merge it.
+
+That version worked, and it was still too much. Every machine needed a clone, and getting started meant running a Python install script by hand. If setting up the tool that saves me from copying things around is itself a chore, I will put it off on the next machine too.
+
+Claude Code already knows how to install and update plugins from a git repo. So Lumbung became a plugin, in a private repo called `lumbung-agent` that is also its own marketplace. A new machine now needs one command in Claude Code and one toggle for auto-update. Claude Code downloads the plugin, keeps it current and loads the agents. Python is still there for the guard and the usage log, but only the hooks call it; I never type it. Trying a new agent on a branch became `claude --plugin-dir`, which touches only that one session.
 
 ## The name
 

@@ -6,11 +6,13 @@ The duplicate guard (`hooks/guard_agent.py`) parses the **Agents** table, so kee
 
 **Location values**
 
-- `kit`: a file in this repo's `agents/` or `skills/`, installed on every machine.
+- `kit`: a file in this repo's `agents/` or `skills/`, shipped by the `lumbung` plugin to every machine (as `lumbung:<name>`).
 - ``repo: `<path>` ``: lives only in that repo (path as on the VM). The guard also scans that repo's `.claude/agents/` when the path exists on the machine.
 - `plugin: <name>`: installed by another tool. Do not edit it or copy it into the kit.
 
 **Status values:** `active`, `draft` (on a feature branch, not on `master` yet), `retired` (kept so the name is not reused by accident).
+
+Names in the tables are the bare names from each file's frontmatter, without the `lumbung:` prefix.
 
 ## Agents
 
@@ -30,9 +32,10 @@ The duplicate guard (`hooks/guard_agent.py`) parses the **Agents** table, so kee
 |---|---|---|---|
 | secure-coding | Secure coding rules for Go + React (used by security-reviewer) | kit | active |
 | code-slop | Slop patterns in Go and TypeScript code (used by slop-reviewer) | kit | active |
-| no-ai-slop | Slop patterns in prose; upstream petergyang/no-ai-slop, pinned in `skills-lock.json` | kit | active |
+| no-ai-slop | Slop patterns in prose; upstream petergyang/no-ai-slop, pinned in core-template's `skills-lock.json` | kit | active |
 | dependency-check | Dependency vetting procedure (used by dependency-auditor) | kit | active |
 | campaign, content-radar, new-brand, refresh, retro | Marketing workflow | repo: `/root/marketing` | active |
+| report | `/lumbung:report`: subagent usage on this machine (a command, listed here so the name stays taken) | kit | active |
 | codebase-memory | How to use the code knowledge graph | plugin: codebase-memory-mcp | active |
 | reverse-engineer-anything | Reverse engineering with REA | plugin: rea | active |
 | (synced) | Skills from the claude.ai account, synced by the account itself | `~/.claude/skills/synced` | do not touch |
