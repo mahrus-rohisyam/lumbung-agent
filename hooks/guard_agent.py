@@ -156,7 +156,7 @@ def main():
     reg = common.KIT / "REGISTRY.md"
     if name not in registry:
         why = f" with the override reason ({override})" if override else ""
-        note(f"Agent '{name}' is not in {reg}. Add a row for it{why} in the Agent table. If it is useful beyond "
+        note(f"Agent '{name}' is not in {reg}. Add a row for it{why} in the Agents table. If it is useful beyond "
              f"this repo, create it in {common.KIT / 'agents'} instead and run install.py.")
 
 
