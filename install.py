@@ -1,17 +1,16 @@
 #!/usr/bin/env python3
-"""Install agent-harness into ~/.claude on this machine (Linux or Windows). Safe to re-run.
+"""Install Lumbung into ~/.claude on this machine (Linux or Windows). Safe to re-run.
 
 Usage:
-  python3 install.py                       # on the VM (the hub)
-  python  install.py --hub root@<vm-host>  # on a laptop/PC that clones from the VM
-  python  install.py --host <name>         # override the machine name used in usage logs
-  python  install.py --uninstall           # remove everything this script added
+  python3 install.py                 # install or refresh from the current checkout
+  python3 install.py --host <name>   # set the machine name used in usage logs (default: hostname)
+  python3 install.py --uninstall     # remove everything this script added (usage log is kept)
 
 What it touches:
   ~/.claude/agents/<kit agents>, ~/.claude/skills/<kit skills>  (only names listed in the manifest)
-  ~/.claude/CLAUDE.md   block between BEGIN/END agent-harness markers
+  ~/.claude/CLAUDE.md   block between BEGIN/END lumbung markers
   ~/.claude/settings.json  hook entries whose args point into this kit; other hooks are left alone
-  ~/.claude/agent-harness/  config, manifest, usage log
+  ~/.claude/lumbung/  config, manifest, usage log, settings backup
 """
 
 import argparse
@@ -23,7 +22,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent / "hooks"))
 import common  # noqa: E402
 
-BEGIN, END = "<!-- BEGIN agent-harness -->", "<!-- END agent-harness -->"
+BEGIN, END = "<!-- BEGIN lumbung -->", "<!-- END lumbung -->"
 
 
 def hook(script, timeout):
@@ -36,7 +35,7 @@ def hook(script, timeout):
 
 
 HOOKS = {
-    "SessionStart": [{"matcher": "startup", "hooks": [hook("sync.py", 20)]}],
+    "SessionStart": [{"matcher": "startup", "hooks": [hook("sync.py", 30)]}],
     "PreToolUse": [{"matcher": "Write|Edit|MultiEdit", "hooks": [hook("guard_agent.py", 10)]}],
     "SubagentStart": [{"matcher": "*", "hooks": [hook("log_usage.py", 5)]}],
     "SubagentStop": [{"matcher": "*", "hooks": [hook("log_usage.py", 5)]}],
@@ -51,9 +50,9 @@ def ours(entry):
 def merge_settings(install):
     path = common.CLAUDE / "settings.json"
     settings = common.load_json(path, {})
-    if path.exists() and not (common.STATE / "settings.json.before-agent-harness").exists():
+    if path.exists() and not (common.STATE / "settings.json.before-lumbung").exists():
         common.STATE.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(path, common.STATE / "settings.json.before-agent-harness")
+        shutil.copy2(path, common.STATE / "settings.json.before-lumbung")
     hooks = settings.setdefault("hooks", {})
     for event in list(hooks):
         hooks[event] = [e for e in hooks[event] if not ours(e)]
@@ -115,7 +114,6 @@ def sync_files(install):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--hub", help="ssh target of the VM, e.g. root@vm (omit on the VM itself)")
     ap.add_argument("--host", help="machine name in usage logs (default: hostname)")
     ap.add_argument("--uninstall", action="store_true")
     ap.add_argument("--quiet", action="store_true")
@@ -124,8 +122,6 @@ def main():
     cfg = common.config()
     if a.host:
         cfg["host"] = a.host
-    if a.hub is not None:
-        cfg["hub"] = a.hub or None
     install = not a.uninstall
 
     files = sync_files(install)
@@ -137,12 +133,13 @@ def main():
 
     if not a.quiet:
         if install:
-            role = f"client of {cfg['hub']}" if cfg["hub"] else "hub"
-            print(f"agent-harness installed on {cfg['host']} ({role})")
+            branch = common.git("rev-parse", "--abbrev-ref", "HEAD") or "?"
+            remote = common.git("remote", "get-url", "origin") or "no remote"
+            print(f"Lumbung installed on {cfg['host']} (branch {branch}, origin: {remote})")
             print(f"  agents: {', '.join(files['agents'])}")
             print(f"  skills: {', '.join(files['skills'])}")
         else:
-            print("agent-harness removed (usage log kept in ~/.claude/agent-harness)")
+            print("Lumbung removed (usage log kept in ~/.claude/lumbung)")
 
 
 if __name__ == "__main__":

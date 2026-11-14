@@ -1,52 +1,62 @@
-# agent-harness
+# Lumbung
 
-Satu sumber untuk agent, skill, aturan, dan hook Claude Code yang dipakai di semua mesin: VM (pusat), laptop, dan komputer.
+One shared store of Claude Code subagents, skills, rules and hooks for every machine I work on.
 
-Status (2026-11-14): **terpasang di VM**. Laptop dan komputer belum. Rancangan dan pertanyaan terbuka ada di [DESIGN.md](DESIGN.md).
+A *lumbung* is the rice barn a village shares: everyone stores in it and takes from it, so nobody keeps their own pile. Lumbung does the same for agents. A good agent written on the VM is there on the laptop next session, and a new repo uses the agent that already exists instead of growing its own copy.
 
-## Pemasangan
+## What it does
 
-**VM (sudah):** `python3 /root/agent-harness/install.py --host vm`
+- **Same kit everywhere.** Agents and skills live in this repo. `install.py` copies them into `~/.claude`, and a SessionStart hook pulls and reinstalls whenever `master` moves.
+- **No duplicate agents.** A PreToolUse hook checks every new `.claude/agents/*.md` against [REGISTRY.md](REGISTRY.md) and the agents it can see, and blocks near copies.
+- **Usage you can see.** SubagentStart/SubagentStop hooks log which agent ran, on which machine, in which repo. `report.py` summarizes all machines.
+- **Safe to develop in.** Only `master` is shared. A new agent is built on a `feature/*` branch and tried on one machine first.
 
-**Laptop / komputer (PowerShell):**
+## Machines
 
-```powershell
-git clone root@<vm>:/root/agent-harness $HOME\agent-harness
-python $HOME\agent-harness\install.py --hub root@<vm> --host laptop   # atau --host komputer
+| Machine | OS | Used for |
+|---|---|---|
+| VM | Linux | Main development; the laptop and PC usually connect to it |
+| Laptop | Windows | Reports and marketing; heavier work when the VM is short on resources |
+| PC | Windows | Windows app development; heavier work when the VM is short on resources |
+
+Each machine clones this repo and runs `install.py`. They all sync through the `origin` remote, which can be the VM over SSH or a private GitHub/GitLab repo. See [docs/setup.md](docs/setup.md).
+
+## Quick start
+
+```bash
+# VM
+python3 /root/lumbung/install.py --host vm
 ```
 
-`<vm>` = host atau alias SSH yang biasa dipakai untuk konek ke VM (harus bisa tanpa password). Setelah itu sinkron jalan sendiri tiap sesi Claude Code dimulai.
+```powershell
+# Laptop or PC (PowerShell)
+git clone <origin-url> $HOME\lumbung
+python $HOME\lumbung\install.py --host laptop   # or --host pc
+```
 
-**Membatalkan:** `python install.py --uninstall` (settings lama juga dibackup di `~/.claude/agent-harness/settings.json.before-agent-harness`).
+Then start a new Claude Code session. `/agents` lists the kit's agents.
 
-## Pemakaian sehari-hari
+## Everyday commands
 
-- Ubah atau tambah agent/skill umum di `agents/` atau `skills/`, perbarui `REGISTRY.md`, commit. Di laptop/komputer: `git push` juga. Mesin lain mengambilnya di sesi berikutnya.
-- Lihat pemakaian (di VM): `python3 /root/agent-harness/report.py --days 30`.
-- `core-template` memakai agent dan skill ini lewat symlink, jadi `sync-agent-kit.py` menyalin versi kit ke repo core.
+| Task | Command |
+|---|---|
+| Install or refresh by hand | `python install.py` |
+| See who uses what | `python report.py --days 30` |
+| Start a new agent or skill | `git switch -c feature/<name>`, then [docs/workflow.md](docs/workflow.md) |
+| Remove Lumbung from a machine | `python install.py --uninstall` |
 
-## Masalah
+## What's in the kit
 
-1. Agent yang bagus ada di VM, tapi tidak ada di laptop/komputer saat sedang kerja di sana (dan sebaliknya).
-2. Repo baru cenderung membuat agent baru sendiri, padahal fungsinya sudah ada di repo lain → redundant.
-3. Tidak ada catatan agent mana yang benar-benar dipakai, di mesin mana, di repo mana.
+| Agents | Skills |
+|---|---|
+| `security-reviewer`, `slop-reviewer`, `dependency-auditor` | `secure-coding`, `code-slop`, `no-ai-slop`, `dependency-check` |
 
-## Mesin
+Repo-bound agents (for example `marketer` in `/root/marketing`) stay in their repo and are listed in [REGISTRY.md](REGISTRY.md).
 
-| Mesin | OS | Dipakai untuk | Akses ke VM |
-|---|---|---|---|
-| VM | Linux | Develop utama (laptop & komputer biasanya konek ke sini) | — |
-| Laptop | Windows | Report, marketing; saat resource VM kurang | SSH (key) |
-| Komputer | Windows | Develop aplikasi Windows; saat resource VM kurang | SSH (key) |
+## Documentation
 
-Python sudah terpasang di ketiganya.
-
-## Ide inti
-
-- **VM = sumber kebenaran.** Folder ini (`/root/agent-harness`) jadi repo git. Laptop & komputer `git clone` lewat SSH dari VM, tanpa GitHub/GitLab.
-- **Sinkron otomatis** lewat hook `SessionStart`: `git pull` + `install.py`, timeout pendek, diam kalau VM tidak terjangkau.
-- **Registry** ([REGISTRY.md](REGISTRY.md)) mendaftar semua agent & skill, di mana tinggalnya, dan untuk apa.
-- **Hook pagar**: setiap penulisan `*/.claude/agents/*.md` dicek ke registry; yang mirip diperingatkan/diblokir.
-- **Log pemakaian** per mesin (dengan nama mesin), dikirim ke VM, dirangkum di VM.
-
-Detail: [DESIGN.md](DESIGN.md).
+- [docs/setup.md](docs/setup.md): installing on each machine, choosing the remote, credentials, uninstalling
+- [docs/workflow.md](docs/workflow.md): adding, developing, releasing and retiring agents and skills
+- [docs/how-it-works.md](docs/how-it-works.md): files, hooks, the duplicate guard, sync and usage logging in detail
+- [docs/troubleshooting.md](docs/troubleshooting.md): common problems and fixes
+- [docs/decisions.md](docs/decisions.md): why it is built this way, and what is still open

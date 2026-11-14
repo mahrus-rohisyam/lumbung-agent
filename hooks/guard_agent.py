@@ -5,7 +5,7 @@ Only acts on files matching */.claude/agents/*.md or the kit's agents/*.md.
   - New agent whose name is already in REGISTRY.md or used by another agent file -> deny.
   - New agent whose description overlaps strongly with an existing agent -> deny.
   - New agent not in REGISTRY.md -> allow, with a reminder to register it.
-A frontmatter comment `# harness-override: <reason>` lets an intentional duplicate through
+A frontmatter comment `# lumbung-override: <reason>` lets an intentional duplicate through
 (e.g. a repo-specific version); the reminder then asks for the reason in REGISTRY.md.
 """
 
@@ -68,10 +68,10 @@ def registered_here(row, target):
     loc = row["location"].lower()
     if loc.startswith("kit"):
         return target.parent == (common.KIT / "agents").resolve()
-    m = re.search(r"`([^`]+)`", row["location"])
-    if m:
+    repo = common.location_path(row)
+    if repo:
         try:
-            target.relative_to(Path(m.group(1)).expanduser().resolve())
+            target.relative_to(repo.resolve())
             return True
         except ValueError:
             return False
@@ -83,9 +83,9 @@ def known_agents(exclude):
     found = {}
     dirs = [common.KIT / "agents", common.CLAUDE / "agents"]
     for row in common.parse_registry():
-        m = re.search(r"`([^`]+)`", row["location"])
-        if m:
-            dirs.append(Path(m.group(1)).expanduser() / ".claude" / "agents")
+        repo = common.location_path(row)
+        if repo:
+            dirs.append(repo / ".claude" / "agents")
     for d in dirs:
         for f in sorted(d.glob("*.md")) if d.is_dir() else []:
             if f.resolve() == exclude:
@@ -111,7 +111,7 @@ def main():
 
     installed = common.load_json(common.MANIFEST, {}).get("agents", [])
     if resolved.parent == (common.CLAUDE / "agents").resolve() and path.name in installed:
-        deny(f"{path.name} is installed from agent-harness and will be overwritten on the next sync. "
+        deny(f"{path.name} is installed from Lumbung and will be overwritten on the next sync. "
              f"Edit {common.KIT / 'agents' / path.name} instead, commit, then run install.py.")
 
     content = new_content(tool, inp, resolved)
@@ -119,7 +119,7 @@ def main():
         return
     meta, comments = common.frontmatter(content)
     name = meta.get("name") or path.stem
-    override = next((c.split(":", 1)[1].strip() for c in comments if c.lower().startswith("harness-override:")), None)
+    override = next((c.split(":", 1)[1].strip() for c in comments if c.lower().startswith(common.OVERRIDE + ":")), None)
 
     old_name = None
     if resolved.exists():
@@ -132,11 +132,11 @@ def main():
     if not override:
         if name in others:
             deny(f"An agent named '{name}' already exists at {others[name][1]}. Use or extend it. If a separate "
-                 f"version is really needed, add '# harness-override: <reason>' to the frontmatter.")
+                 f"version is really needed, add '# lumbung-override: <reason>' to the frontmatter.")
         if name in registry and not registered_here(registry[name], resolved):
             r = registry[name]
             deny(f"'{name}' is already in REGISTRY.md ({r['location']}): {r['purpose']}. Use or extend it, or add "
-                 f"'# harness-override: <reason>'.")
+                 f"'# lumbung-override: <reason>'.")
         mine = tokens(name.replace("-", " ") + " " + meta.get("description", ""))
         candidates = [(n, d + " " + registry.get(n, {}).get("purpose", ""), w) for n, (d, w) in others.items()]
         candidates += [(n, r["purpose"], r["location"]) for n, r in registry.items() if n not in others and n != name]
@@ -151,7 +151,7 @@ def main():
         if best:
             deny(f"New agent '{name}' overlaps with existing agent '{best[1]}' ({best[2]}); shared terms: "
                  f"{', '.join(best[3])}. Use or extend '{best[1]}'. If it is really different, add "
-                 f"'# harness-override: <reason>' to the frontmatter.")
+                 f"'# lumbung-override: <reason>' to the frontmatter.")
 
     reg = common.KIT / "REGISTRY.md"
     if name not in registry:

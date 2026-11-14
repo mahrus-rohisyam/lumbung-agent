@@ -1,19 +1,22 @@
-"""Shared paths and helpers for agent-harness hooks and scripts. Standard library only."""
+"""Shared paths and helpers for Lumbung hooks and scripts. Standard library only."""
 
 import json
 import os
+import re
 import socket
 import subprocess
 from pathlib import Path
 
 KIT = Path(__file__).resolve().parent.parent
 CLAUDE = Path.home() / ".claude"
-STATE = CLAUDE / "agent-harness"
+STATE = CLAUDE / "lumbung"
 CONFIG = STATE / "config.json"
 MANIFEST = STATE / "manifest.json"
 USAGE = STATE / "usage.jsonl"
-SHIPPED = STATE / "usage.shipped"  # byte offset of USAGE already sent to the hub
-INBOX = STATE / "inbox"  # on the hub: one file per remote host
+
+MAIN = "master"  # the branch every machine runs
+USAGE_BRANCH = "usage"  # usage logs, one file per machine: usage/<host>.jsonl
+OVERRIDE = "lumbung-override"
 
 
 def load_json(path, default):
@@ -32,20 +35,24 @@ def save_json(path, data):
 
 
 def config():
-    """{"host": str, "hub": null | "user@vm"}; hub is null on the VM itself."""
     cfg = load_json(CONFIG, {})
     cfg.setdefault("host", socket.gethostname().lower())
-    cfg.setdefault("hub", None)
     return cfg
 
 
-def git(*args, timeout=5):
-    """Run git in the kit; returns stdout or None on any failure."""
+def git(*args, timeout=5, env=None):
+    """Run git in the kit; returns stdout, or None on any failure. Never prompts."""
+    e = dict(os.environ, GIT_TERMINAL_PROMPT="0", **(env or {}))
     try:
-        r = subprocess.run(["git", "-C", str(KIT), *args], capture_output=True, text=True, timeout=timeout)
+        r = subprocess.run(["git", "-C", str(KIT), *args], capture_output=True, text=True, timeout=timeout,
+                           env=e, stdin=subprocess.DEVNULL)
     except (OSError, subprocess.TimeoutExpired):
         return None
     return r.stdout.strip() if r.returncode == 0 else None
+
+
+def has_origin():
+    return "origin" in (git("remote") or "").split()
 
 
 def read_hook_input():
@@ -58,19 +65,25 @@ def read_hook_input():
 
 
 def parse_registry():
-    """Rows of the Agent table in REGISTRY.md as dicts: name, purpose, location, status."""
+    """Rows of the Agents table in REGISTRY.md as dicts: name, purpose, location, status."""
     rows, in_agents = [], False
     for line in (KIT / "REGISTRY.md").read_text(encoding="utf-8").splitlines():
         if line.startswith("## "):
-            in_agents = line.strip().lower() == "## agent"
+            in_agents = line.strip().lower() == "## agents"
             continue
         if not in_agents or not line.startswith("|") or set(line) <= set("|-: "):
             continue
         cells = [c.strip() for c in line.strip().strip("|").split("|")]
-        if len(cells) < 4 or cells[0].lower() == "nama":
+        if len(cells) < 4 or cells[0].lower() == "name":
             continue
         rows.append({"name": cells[0].strip("`"), "purpose": cells[1], "location": cells[2], "status": cells[3]})
     return rows
+
+
+def location_path(row):
+    """The repo path in a registry location like 'repo: `/root/marketing`', or None."""
+    m = re.search(r"`([^`]+)`", row["location"])
+    return Path(m.group(1)).expanduser() if m else None
 
 
 def frontmatter(text):

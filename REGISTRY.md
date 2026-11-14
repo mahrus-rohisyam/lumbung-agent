@@ -1,35 +1,38 @@
-# Registry agent & skill
+# Registry
 
-Baca sebelum membuat agent atau skill baru. Hook `guard_agent.py` membaca tabel **Agent** di bawah, jadi formatnya jangan diubah: 4 kolom, nama di kolom pertama, path repo ditulis dalam backtick.
+Every subagent and skill I use, what it does and where it lives. Read this before creating a new one.
 
-Lokasi:
-- **kit**: file di `agents/` atau `skills/` folder ini, dipasang ke semua mesin oleh `install.py`.
-- **repo: \`<path>\`**: hanya ada di repo itu (path di VM).
-- **plugin: <nama>**: dipasang installer lain, jangan diedit dan jangan disalin ke kit.
+The duplicate guard (`hooks/guard_agent.py`) parses the **Agents** table, so keep its shape: four columns, the agent name in the first column, repo paths in backticks. The Purpose column is compared with new agents' descriptions to detect overlap, so write it in plain English with the words a similar agent would use.
 
-Kolom "Untuk apa" ditulis dalam bahasa Inggris, karena dibandingkan dengan deskripsi agent (yang juga berbahasa Inggris) untuk mendeteksi duplikat.
+**Location values**
 
-## Agent
+- `kit`: a file in this repo's `agents/` or `skills/`, installed on every machine.
+- ``repo: `<path>` ``: lives only in that repo (path as on the VM). The guard also scans that repo's `.claude/agents/` when the path exists on the machine.
+- `plugin: <name>`: installed by another tool. Do not edit it or copy it into the kit.
 
-| Nama | Untuk apa | Lokasi | Status |
+**Status values:** `active`, `draft` (on a feature branch, not on `master` yet), `retired` (kept so the name is not reused by accident).
+
+## Agents
+
+| Name | Purpose | Location | Status |
 |---|---|---|---|
-| security-reviewer | Read-only security review of a finished change: input handling, auth, sessions, authorization, SQL, files, redirects, secrets | kit (juga disalin ke core-backend, core-frontend lewat core-template) | aktif |
-| slop-reviewer | Read-only review of a diff for AI slop in code, docs, comments, commit messages, UI copy | kit (juga disalin ke core-backend, core-frontend lewat core-template) | aktif |
-| dependency-auditor | Vet a Go module or npm package before adding or bumping a dependency | kit (juga disalin ke core-backend, core-frontend lewat core-template) | aktif |
-| marketer | Plan, write and render marketing content per brand: videos, landing loops, social images | repo: `/root/marketing` | aktif, butuh repo marketing |
-| codebase-memory | Code knowledge graph verification for a task | plugin: codebase-memory-mcp | aktif |
-| codebase-memory-scout | Fast code knowledge graph lookup | plugin: codebase-memory-mcp | aktif |
-| codebase-memory-auditor | Bounded code knowledge graph audit | plugin: codebase-memory-mcp | aktif |
+| security-reviewer | Read-only security review of a finished change: input handling, auth, sessions, authorization, SQL, files, redirects, secrets | kit (also synced into core-backend, core-frontend by core-template) | active |
+| slop-reviewer | Read-only review of a diff for AI slop in code, docs, comments, commit messages, UI copy | kit (also synced into core-backend, core-frontend by core-template) | active |
+| dependency-auditor | Vet a Go module or npm package before adding or bumping a dependency | kit (also synced into core-backend, core-frontend by core-template) | active |
+| marketer | Plan, write and render marketing content per brand: videos, landing loops, social images | repo: `/root/marketing` | active, needs the marketing repo |
+| codebase-memory | Code knowledge graph verification for a task | plugin: codebase-memory-mcp | active |
+| codebase-memory-scout | Fast code knowledge graph lookup | plugin: codebase-memory-mcp | active |
+| codebase-memory-auditor | Bounded code knowledge graph audit | plugin: codebase-memory-mcp | active |
 
-## Skill
+## Skills
 
-| Nama | Untuk apa | Lokasi | Status |
+| Name | Purpose | Location | Status |
 |---|---|---|---|
-| secure-coding | Secure coding rules (used by security-reviewer) | kit | aktif |
-| code-slop | Slop patterns in code (used by slop-reviewer) | kit | aktif |
-| no-ai-slop | Slop patterns in prose; upstream petergyang/no-ai-slop (hash in core-template `skills-lock.json`) | kit | aktif |
-| dependency-check | Dependency vetting procedure (used by dependency-auditor) | kit | aktif |
-| campaign, content-radar, new-brand, refresh, retro | Marketing workflow | repo: `/root/marketing` | aktif |
-| codebase-memory | How to use the code knowledge graph | plugin: codebase-memory-mcp | aktif |
-| reverse-engineer-anything | Reverse engineering with REA | plugin: rea | aktif |
-| (synced) | Skills from the claude.ai account, synced by the account | `~/.claude/skills/synced` | jangan disentuh |
+| secure-coding | Secure coding rules for Go + React (used by security-reviewer) | kit | active |
+| code-slop | Slop patterns in Go and TypeScript code (used by slop-reviewer) | kit | active |
+| no-ai-slop | Slop patterns in prose; upstream petergyang/no-ai-slop, pinned in `skills-lock.json` | kit | active |
+| dependency-check | Dependency vetting procedure (used by dependency-auditor) | kit | active |
+| campaign, content-radar, new-brand, refresh, retro | Marketing workflow | repo: `/root/marketing` | active |
+| codebase-memory | How to use the code knowledge graph | plugin: codebase-memory-mcp | active |
+| reverse-engineer-anything | Reverse engineering with REA | plugin: rea | active |
+| (synced) | Skills from the claude.ai account, synced by the account itself | `~/.claude/skills/synced` | do not touch |
