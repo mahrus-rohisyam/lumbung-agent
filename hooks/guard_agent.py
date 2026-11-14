@@ -1,7 +1,7 @@
 """PreToolUse hook (Write|Edit|MultiEdit): stop redundant subagents before they are written.
 
-Only acts on files matching */.claude/agents/*.md or the kit's agents/*.md.
-  - Editing an installed copy in ~/.claude/agents that comes from the kit -> deny (edit the kit).
+Only acts on agent files: */.claude/agents/*.md, or agents/*.md inside a plugin (such as a Lumbung clone).
+  - Any write into ~/.claude/plugins/cache or /marketplaces (managed by Claude Code) -> deny (edit the clone).
   - New agent whose name is already in REGISTRY.md or used by another agent file -> deny.
   - New agent whose description overlaps strongly with an existing agent -> deny.
   - New agent not in REGISTRY.md -> allow, with a reminder to register it.
@@ -46,7 +46,7 @@ def is_agent_file(p):
     parts = [x.lower() for x in p.parts]
     if p.suffix.lower() != ".md" or len(parts) < 2 or parts[-2] != "agents":
         return False
-    return (len(parts) >= 3 and parts[-3] == ".claude") or p.parent == common.KIT / "agents"
+    return (len(parts) >= 3 and parts[-3] == ".claude") or common.plugin_name(p.parent.parent) is not None
 
 
 def new_content(tool, inp, path):
@@ -67,7 +67,7 @@ def registered_here(row, target):
     """True when the registry row says the agent lives where it is being written (it was registered first)."""
     loc = row["location"].lower()
     if loc.startswith("kit"):
-        return target.parent == (common.KIT / "agents").resolve()
+        return target.parent.name == "agents" and common.plugin_name(target.parent.parent) == common.PLUGIN
     repo = common.location_path(row)
     if repo:
         try:
@@ -105,14 +105,17 @@ def main():
     path = Path(raw.replace("\\", "/")).expanduser()
     if not path.is_absolute():
         path = Path(data.get("cwd") or ".") / path
+    resolved = path.resolve()
+    for managed in ("cache", "marketplaces"):
+        try:
+            resolved.relative_to((common.CLAUDE / "plugins" / managed).resolve())
+        except ValueError:
+            continue
+        deny(f"{resolved} is a plugin copy managed by Claude Code and is replaced on every update. Edit the "
+             f"file in the plugin's own clone instead; for Lumbung, on a feature/* branch (see docs/workflow.md).")
     if not is_agent_file(path):
         return
-    resolved = path.resolve()
 
-    installed = common.load_json(common.MANIFEST, {}).get("agents", [])
-    if resolved.parent == (common.CLAUDE / "agents").resolve() and path.name in installed:
-        deny(f"{path.name} is installed from Lumbung and will be overwritten on the next sync. "
-             f"Edit {common.KIT / 'agents' / path.name} instead, commit, then run install.py.")
 
     content = new_content(tool, inp, resolved)
     if content is None:
@@ -153,11 +156,11 @@ def main():
                  f"{', '.join(best[3])}. Use or extend '{best[1]}'. If it is really different, add "
                  f"'# lumbung-override: <reason>' to the frontmatter.")
 
-    reg = common.KIT / "REGISTRY.md"
     if name not in registry:
         why = f" with the override reason ({override})" if override else ""
-        note(f"Agent '{name}' is not in {reg}. Add a row for it{why} in the Agents table. If it is useful beyond "
-             f"this repo, create it in {common.KIT / 'agents'} instead and run install.py.")
+        note(f"Agent '{name}' is not in Lumbung's REGISTRY.md. Add a row for it{why} in the Agents table of your "
+             f"Lumbung clone. If it is useful beyond this repo, create it in the clone's agents/ on a feature/* "
+             f"branch instead (see docs/workflow.md in the Lumbung repo).")
 
 
 if __name__ == "__main__":

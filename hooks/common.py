@@ -3,56 +3,15 @@
 import json
 import os
 import re
-import socket
-import subprocess
 from pathlib import Path
 
-KIT = Path(__file__).resolve().parent.parent
+PLUGIN = "lumbung"
+KIT = Path(__file__).resolve().parent.parent  # plugin root: the installed copy, or a --plugin-dir clone
 CLAUDE = Path.home() / ".claude"
-STATE = CLAUDE / "lumbung"
-CONFIG = STATE / "config.json"
-MANIFEST = STATE / "manifest.json"
-USAGE = STATE / "usage.jsonl"
-
-MAIN = "master"  # the branch every machine runs
-USAGE_BRANCH = "usage"  # usage logs, one file per machine: usage/<host>.jsonl
+# Claude Code exports CLAUDE_PLUGIN_DATA to hooks; it survives plugin updates.
+DATA = Path(os.environ.get("CLAUDE_PLUGIN_DATA") or CLAUDE / "plugins" / "data" / "lumbung-lumbung-agent")
+USAGE = DATA / "usage.jsonl"
 OVERRIDE = "lumbung-override"
-
-
-def load_json(path, default):
-    try:
-        return json.loads(Path(path).read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return default
-
-
-def save_json(path, data):
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + ".tmp")
-    tmp.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
-    os.replace(tmp, path)
-
-
-def config():
-    cfg = load_json(CONFIG, {})
-    cfg.setdefault("host", socket.gethostname().lower())
-    return cfg
-
-
-def git(*args, timeout=5, env=None):
-    """Run git in the kit; returns stdout, or None on any failure. Never prompts."""
-    e = dict(os.environ, GIT_TERMINAL_PROMPT="0", **(env or {}))
-    try:
-        r = subprocess.run(["git", "-C", str(KIT), *args], capture_output=True, text=True, timeout=timeout,
-                           env=e, stdin=subprocess.DEVNULL)
-    except (OSError, subprocess.TimeoutExpired):
-        return None
-    return r.stdout.strip() if r.returncode == 0 else None
-
-
-def has_origin():
-    return "origin" in (git("remote") or "").split()
 
 
 def read_hook_input():
@@ -62,6 +21,14 @@ def read_hook_input():
         return json.load(sys.stdin)
     except ValueError:
         return {}
+
+
+def plugin_name(root):
+    """Manifest name of the plugin at root, or None when root is not a plugin."""
+    try:
+        return json.loads((Path(root) / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8")).get("name")
+    except (OSError, ValueError):
+        return None
 
 
 def parse_registry():

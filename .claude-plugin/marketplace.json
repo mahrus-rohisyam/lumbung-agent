@@ -1,0 +1,14 @@
+{
+  "name": "lumbung-agent",
+  "owner": {
+    "name": "mahrus-rohisyam"
+  },
+  "description": "Private marketplace for the Lumbung plugin.",
+  "plugins": [
+    {
+      "name": "lumbung",
+      "source": "./",
+      "description": "Shared subagents, skills and rules for every machine, a guard against duplicate agents, and a local subagent usage log."
+    }
+  ]
+}
