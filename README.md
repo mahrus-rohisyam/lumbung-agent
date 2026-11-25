@@ -28,12 +28,12 @@ On each machine, clone into Antigravity's global plugins folder so it works acro
 
 ```bash
 # Linux / macOS
-git clone https://github.com/<owner>/lumbung-agent ~/.gemini/config/plugins/lumbung
+git clone https://github.com/mahrus-rohisyam/lumbung-agent ~/.gemini/config/plugins/lumbung
 ```
 
 ```powershell
 # Windows (PowerShell)
-git clone https://github.com/<owner>/lumbung-agent $HOME\.gemini\config\plugins\lumbung
+git clone https://github.com/mahrus-rohisyam/lumbung-agent $HOME\.gemini\config\plugins\lumbung
 ```
 
 That's all — Antigravity loads `plugin.json`, `hooks.json`, `rules/AGENTS.md`, `skills/`, and `agents/` automatically on the next turn. Update anytime with `git -C ~/.gemini/config/plugins/lumbung pull`. See [docs/setup.md](docs/setup.md#install-antigravity) for workspace-only or symlink installs.
