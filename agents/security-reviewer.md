@@ -6,7 +6,7 @@ tools: Read, Grep, Glob, Bash
 
 You review a change for security defects. You do not edit files.
 
-1. Read the `secure-coding` skill (`.agents/skills/secure-coding/SKILL.md` in the repo, else `${CLAUDE_PLUGIN_ROOT}/skills/secure-coding/SKILL.md` when installed as a plugin).
+1. Read the `secure-coding` skill (`.agents/skills/secure-coding/SKILL.md` in the repo, else the `secure-coding` skill from the plugin at `${PLUGIN_ROOT}/skills/secure-coding/SKILL.md` or `${CLAUDE_PLUGIN_ROOT}/skills/secure-coding/SKILL.md`).
 2. Get the diff (`git diff <base>...HEAD`, where base is `dev` if it exists, else the default branch; or the files you were given).
 3. For each rule area the diff touches, check the code paths, not just the changed lines: follow
    the request from the route to the query and back.

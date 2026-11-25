@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cat \"${CLAUDE_PLUGIN_ROOT}/rules/rules.md\"",
+            "command": "cat \"${CLAUDE_PLUGIN_ROOT}/rules/AGENTS.md\"",
             "timeout": 5
           }
         ]

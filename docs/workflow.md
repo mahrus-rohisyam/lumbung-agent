@@ -17,22 +17,28 @@ When in doubt, start in the repo. Moving it into Lumbung later is easy; pulling 
 
 ## Get a clone
 
-You only need one on a machine where you develop. VM: `/root/lumbung-agent`. Windows:
+You only need a clone on a machine where you develop agents or skills:
+
+```bash
+# Linux / macOS
+git clone https://github.com/<owner>/lumbung-agent ~/lumbung-agent
+```
 
 ```powershell
-git clone https://github.com/mahrus-rohisyam/lumbung-agent $HOME\lumbung-agent
+# Windows (PowerShell)
+git clone https://github.com/<owner>/lumbung-agent $HOME\lumbung-agent
 ```
 
 ## Develop a new agent or skill
 
 ```bash
-cd ~/lumbung-agent                        # /root/lumbung-agent on the VM
+cd ~/lumbung-agent
 git switch -c feature/report-writer
 ```
 
 1. Write `agents/report-writer.md`, or `skills/report-writer/SKILL.md`.
    - Frontmatter: `name`, a `description` that says when to use it, and `tools` if it should be limited.
-   - Do not hard-code repo paths. If it reads one of the kit's skills, point at it by name (the `secure-coding` skill), so it works both from the plugin and from a repo that has its own copy.
+   - Do not hard-code repo paths. If it reads one of the kit's skills, point at it by name (for example the `secure-coding` skill), so it works both from the plugin and from a repo that has its own copy.
 2. Add a row to `REGISTRY.md` with status `draft`.
 3. Try it in a repo where it is useful, loading your clone instead of the installed plugin:
    ```bash
@@ -45,7 +51,7 @@ git switch -c feature/report-writer
 
 The duplicate guard runs while you write the file. If it blocks you, read which agent it matched before reaching for the override.
 
-**On the VM while it installs from the local path:** that install loads the clone in place, so every session on the VM runs whatever branch is checked out. Switch back to `master` when you stop working on the branch.
+**If installed from a local path:** that install loads the clone in place, so every session on that machine runs whatever branch is checked out. Switch back to `master` when you stop working on the branch.
 
 ## Release it
 
@@ -72,11 +78,9 @@ Nothing was ever installed, so there is nothing to clean up.
 
 Same branch flow. Never edit the copy under `~/.claude/plugins/`. The guard blocks it, and the next update replaces it anyway.
 
-For `security-reviewer`, `slop-reviewer`, `dependency-auditor` and their skills: core-template links to these files. After merging, run `python3 sync-agent-kit.py` in `/root/core-template` and commit the result in `core-backend` and `core-frontend` through their own feature branch flow. Keep the text free of personal setup details, because it is published there.
-
 ## Repo-bound agents
 
-Develop them inside the repo, following that repo's git flow. Add a registry row here with `` repo: `<path>` `` as the location (path as on the VM). The guard reads that path to find the repo's agents on machines where it exists.
+Develop them inside the repo, following that repo's git flow. Add a registry row here with `` repo: `<path>` `` as the location. The guard reads that path to find the repo's agents on machines where it exists.
 
 **Promote** a repo-bound agent into Lumbung when `/lumbung:report` shows it used in three or more repos, or when you find yourself wanting it somewhere else. Remove the repo-specific parts, move the file into this repo on a branch, update the registry row, and delete the repo copy.
 
@@ -86,9 +90,9 @@ Sometimes a repo needs its own version of an agent, for example a security revie
 
 ```yaml
 ---
-name: seira-security-reviewer
+name: billing-security-reviewer
 description: ...
-# lumbung-override: knows Seira's project/role permission model
+# lumbung-override: knows this app's custom tenant/role permission model
 ---
 ```
 
@@ -96,9 +100,9 @@ Record it in the registry with the same reason.
 
 ## Skills from outside
 
-Treat a third-party skill like a dependency. Read all of it. Check where it comes from and that it does not tell the agent to fetch or run anything. Record its source and content hash (core-template's `skills-lock.json` keeps the one for `no-ai-slop`). Then add it on a branch like any other skill.
+Treat a third-party skill like a dependency. Read all of it. Check where it comes from and that it does not tell the agent to fetch or run anything. Record its source and content hash (for example in a lockfile or commit message). Then add it on a branch like any other skill.
 
-A third-party *plugin* can be installed directly from its own marketplace instead. It does not need to go through Lumbung, but it does need a registry row, so the guard and the next person know it exists.
+A third-party *plugin* can be installed directly from its own marketplace instead. It does not need to go through Lumbung, but it does need a registry row, so the guard and other sessions know it exists.
 
 ## Retire an agent or skill
 

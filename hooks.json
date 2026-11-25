@@ -1,0 +1,16 @@
+{
+  "lumbung-duplicate-guard": {
+    "PreToolUse": [
+      {
+        "matcher": "write_file|edit_file|write_to_file|replace_file_content|multi_replace_file_content",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh ./hooks/run.sh ./hooks/guard_agent.py",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

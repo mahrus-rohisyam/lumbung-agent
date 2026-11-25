@@ -1,0 +1,4 @@
+interface:
+  display_name: "/code-quality"
+  short_description: "Review and improve code correctness, modularity, readability, and tests."
+  default_prompt: "Use $code-quality to review this change for maintainability, edge cases, and testability."

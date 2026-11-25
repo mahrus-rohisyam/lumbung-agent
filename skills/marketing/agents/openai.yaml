@@ -1,0 +1,4 @@
+interface:
+  display_name: "/marketing"
+  short_description: "Plan marketing strategy, positioning, messaging, and campaigns."
+  default_prompt: "Use $marketing to plan positioning, messaging, and a campaign for this product."

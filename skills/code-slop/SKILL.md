@@ -1,12 +1,11 @@
 ---
 name: code-slop
-description: Find and remove AI-slop patterns in Go and TypeScript code before a change is reported as done. Use on every finished code change, when reviewing AI-written code, or when the user asks whether code looks generated. Covers noise comments, speculative abstractions, defensive code for impossible states, swallowed errors, invented APIs, duplicated core functionality and padded tests. For prose (docs, commit messages, UI copy), use no-ai-slop instead.
+description: Find and remove AI-slop patterns in code before a change is reported as done. Use on every finished code change, when reviewing AI-written code, or when the user asks whether code looks generated. Covers noise comments, speculative abstractions, defensive code for impossible states, swallowed errors, invented APIs, duplicated existing functionality and padded tests. For prose (docs, commit messages, UI copy), use no-ai-slop instead.
 ---
 
 # Code slop
 
-Slop is code that looks complete but is longer, vaguer or less correct than it needs to be. Review
-the diff, not the whole repo. Each finding needs a file, a line and a concrete fix.
+Slop is code that looks complete but is longer, vaguer or less correct than it needs to be. Review the diff, not the whole repo. Each finding needs a file, a line and a concrete fix.
 
 ## Patterns
 
@@ -18,34 +17,31 @@ the diff, not the whole repo. Each finding needs a file, a line and a concrete f
 - Keep comments that say *why*: a constraint, a non-obvious invariant, a link to an incident.
 
 **Structure**
-- An interface with one implementation, defined next to that implementation. In Go, define
-  interfaces where they are consumed, and only when there are two implementations or a test needs one.
+- An interface or abstract base class with one implementation, defined next to that implementation. Define abstractions where consumed, and only when multiple implementations or a test seam require one.
 - Factories, managers, services, wrappers and option structs that add a layer without a second user.
-- Packages or folders named `utils`, `helpers`, `common`, `misc`.
+- Grab-bag modules or folders named `utils`, `helpers`, `common`, `misc`.
 - Config flags, parameters or generic type parameters nobody asked for.
-- Re-implementing something the core or the standard library already provides.
+- Re-implementing something the project's shared modules or the standard library already provides.
 
 **Errors and control flow**
 - Checks for states the types or the caller already rule out.
-- Errors swallowed or logged and then ignored. Go: return them wrapped with context,
-  `fmt.Errorf("load invoice %d: %w", id, err)`. TS: no empty `catch {}`.
-- `panic` in library code, `init()` with side effects, package-level mutable state.
-- Goroutines without an owner, a `context` and a way to stop. `context.Background()` inside a request.
+- Errors swallowed or logged and then ignored (e.g. empty `catch {}`, bare `except: pass`, discarded error returns). Wrap errors with context when propagating.
+- `panic` / unhandled throws in library code, import-time side effects (`init()`), module-level mutable state.
+- Background tasks or goroutines without an owner, cancellation context and a way to stop (e.g. `context.Background()` inside a request handler).
 
 **Invented or stale APIs**
-- Functions, options or flags that do not exist at the pinned version. Verify with `go doc` or the
-  package's `.d.ts` (see `dependency-check`).
+- Functions, options or flags that do not exist at the pinned version. Verify against the installed package docs or type definitions (see `dependency-check`).
 
-**TypeScript and React**
+**TypeScript / Frontend (when applicable)**
 - `any`, `as unknown as T`, `@ts-ignore` / `@ts-expect-error` without a reason.
 - `useEffect` that derives state from props or other state; compute it during render.
 - `useMemo` / `useCallback` everywhere without a measured reason.
-- Components that only forward props to one child.
-- `console.log` left in, and API calls outside the generated client.
+- Wrapper components that only forward props to one child.
+- Debug logging left in (`console.log`, `print`, `fmt.Println`), and ad-hoc API calls bypassing the project's API client.
 
 **Tests**
 - Tests that assert the mock was called instead of the behavior.
-- Many near-identical tests where one table-driven test would do.
+- Many near-identical tests where one parameterized / table-driven test would do.
 - Snapshot tests of large output nobody will review.
 - Missing the negative case: wrong user, invalid input, empty list.
 
@@ -60,10 +56,8 @@ the diff, not the whole repo. Each finding needs a file, a line and a concrete f
 
 ## Size check
 
-Compare the diff to the request. If the change adds more than it needs, cut it. Each changed line
-should trace back to the request.
+Compare the diff to the request. If the change adds more than it needs, cut it. Each changed line should trace back to the request.
 
 ## Output
 
-For a review, list findings as `path:line: pattern, fix`. When you fix your own diff, fix first, then
-report only what changed. Do not rewrite code outside the diff.
+For a review, list findings as `path:line: pattern, fix`. When you fix your own diff, fix first, then report only what changed. Do not rewrite code outside the diff.

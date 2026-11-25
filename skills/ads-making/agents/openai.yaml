@@ -1,0 +1,4 @@
+interface:
+  display_name: "/ads-making"
+  short_description: "Create video ad scripts/shot lists and ad copywriting variations."
+  default_prompt: "Use $ads-making to create a video ad script, shot list, and ad copy variations."

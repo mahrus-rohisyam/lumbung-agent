@@ -1,0 +1,4 @@
+interface:
+  display_name: "/seo-audit"
+  short_description: "Run technical, on-page, and content SEO checks and audits."
+  default_prompt: "Use $seo-audit to check SEO implementation and report prioritized fixes."

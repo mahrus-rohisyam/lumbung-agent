@@ -5,12 +5,12 @@
 1. **Was it pushed to `master`?** On the machine that made it: `git log origin/master -1`.
 2. **Is auto-update on?** `/plugin` → **Marketplaces** → `lumbung-agent`. If it says **Enable auto-update**, it is off.
 3. **Auto-update is not instant.** It runs in the background after your first message of a session, within about ten minutes, and the new version loads in the next session (or after `/reload-plugins`). To update right away: **Update marketplace** on the same screen, then `/reload-plugins`.
-4. **Can this machine reach the repo without a prompt?** From a shell: `git ls-remote https://github.com/mahrus-rohisyam/lumbung-agent` (or the SSH form). If it asks for anything, fix access first ([setup.md](setup.md#access-to-the-private-repo)). Background updates fail quietly and keep the old version.
+4. **Can this machine reach the repo without a prompt?** From a shell: `git ls-remote https://github.com/<owner>/lumbung-agent` (or the SSH form). If it asks for anything, fix access first ([setup.md](setup.md#access-to-a-private-repo)). Background updates fail quietly and keep the old version.
 5. `claude plugin list` shows the installed version (a commit SHA). Compare it with `git rev-parse --short=12 origin/master` in a clone.
 
 ## Install fails with an authentication or "repository not found" error
 
-The repo is private and Claude Code never prompts. Set up an SSH key or a stored HTTPS credential ([setup.md](setup.md#access-to-the-private-repo)). On Windows without a GitHub SSH key, set `CLAUDE_CODE_PLUGIN_PREFER_HTTPS=1`.
+If the repository is private, Claude Code never prompts for credentials. Set up an SSH key or a stored HTTPS credential ([setup.md](setup.md#access-to-a-private-repo)). On Windows without an SSH key, set `CLAUDE_CODE_PLUGIN_PREFER_HTTPS=1`.
 
 ## The guard blocked an agent that is not a duplicate
 
@@ -45,6 +45,6 @@ No subagent has run on this machine since the plugin was installed, or the log w
 
 The clone replaces the installed plugin only when its manifest name is `lumbung`, which it is unless you changed `plugin.json`. Check that you started `claude` with the right path, and run `/reload-plugins` after edits.
 
-## The VM runs a feature branch everywhere
+## A local-path install runs a feature branch everywhere
 
-While the VM installs from the local path, the plugin loads in place from `/root/lumbung-agent`, so every session there runs the checked-out branch. `git switch master` puts it back. Installing from GitHub on the VM removes this effect ([setup.md](setup.md#machines)).
+When a marketplace is added from a local directory path, the plugin loads in place from that clone, so every session on that machine runs whichever branch is checked out. Run `git switch master` to return to the release branch, or install from a Git remote instead ([setup.md](setup.md#local-path-install-offline-or-single-machine)).

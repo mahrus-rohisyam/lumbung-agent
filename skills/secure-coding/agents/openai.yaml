@@ -1,4 +1,4 @@
 interface:
   display_name: "/secure-coding"
-  short_description: "Security rules and checks for Go and React/Astro changes."
+  short_description: "Security rules and checks for backend and web application changes."
   default_prompt: "Use $secure-coding to check this change for security issues."

@@ -1,0 +1,13 @@
+{
+  "name": "lumbung",
+  "displayName": "Lumbung",
+  "description": "Shared subagents, skills and rules for every machine, plus a duplicate-agent guard and local usage reporting.",
+  "author": {
+    "name": "mahrus-rohisyam"
+  },
+  "suggestedPrompts": [
+    "Review my current changes with security-reviewer",
+    "Check my diff for AI slop using code-slop and no-ai-slop",
+    "Vet a new dependency with dependency-check before adding it"
+  ]
+}

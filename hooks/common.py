@@ -9,7 +9,11 @@ PLUGIN = "lumbung"
 KIT = Path(__file__).resolve().parent.parent  # plugin root: the installed copy, or a --plugin-dir clone
 CLAUDE = Path.home() / ".claude"
 # Claude Code exports CLAUDE_PLUGIN_DATA to hooks; it survives plugin updates.
-DATA = Path(os.environ.get("CLAUDE_PLUGIN_DATA") or CLAUDE / "plugins" / "data" / "lumbung-lumbung-agent")
+DATA = Path(
+    os.environ.get("CLAUDE_PLUGIN_DATA")
+    or os.environ.get("PLUGIN_DATA")
+    or CLAUDE / "plugins" / "data" / "lumbung-lumbung-agent"
+)
 USAGE = DATA / "usage.jsonl"
 OVERRIDE = "lumbung-override"
 
@@ -25,10 +29,17 @@ def read_hook_input():
 
 def plugin_name(root):
     """Manifest name of the plugin at root, or None when root is not a plugin."""
-    try:
-        return json.loads((Path(root) / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8")).get("name")
-    except (OSError, ValueError):
-        return None
+    root = Path(root)
+    for rel in (
+        Path("plugin.json"),
+        Path(".antigravity-plugin") / "plugin.json",
+        Path(".claude-plugin") / "plugin.json",
+    ):
+        try:
+            return json.loads((root / rel).read_text(encoding="utf-8")).get("name")
+        except (OSError, ValueError):
+            continue
+    return None
 
 
 def parse_registry():
@@ -48,7 +59,7 @@ def parse_registry():
 
 
 def location_path(row):
-    """The repo path in a registry location like 'repo: `/root/marketing`', or None."""
+    """The repo path in a registry location like 'repo: `~/projects/my-app`', or None."""
     m = re.search(r"`([^`]+)`", row["location"])
     return Path(m.group(1)).expanduser() if m else None
 

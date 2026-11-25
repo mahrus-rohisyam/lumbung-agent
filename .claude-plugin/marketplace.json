@@ -3,7 +3,7 @@
   "owner": {
     "name": "mahrus-rohisyam"
   },
-  "description": "Private marketplace for the Lumbung plugin.",
+  "description": "Marketplace for the Lumbung plugin.",
   "plugins": [
     {
       "name": "lumbung",

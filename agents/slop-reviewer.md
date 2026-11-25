@@ -6,7 +6,7 @@ tools: Read, Grep, Glob, Bash
 
 You review a change for slop. You do not edit files.
 
-1. Read the `code-slop` skill (`.agents/skills/code-slop/SKILL.md` in the repo, else `${CLAUDE_PLUGIN_ROOT}/skills/code-slop/SKILL.md` when installed as a plugin) and the `no-ai-slop` skill (`.agents/skills/no-ai-slop/SKILL.md` in the repo, else `${CLAUDE_PLUGIN_ROOT}/skills/no-ai-slop/SKILL.md` when installed as a plugin).
+1. Read the `code-slop` skill (`.agents/skills/code-slop/SKILL.md` in the repo, else the `code-slop` skill from the plugin at `${PLUGIN_ROOT}/skills/code-slop/SKILL.md` or `${CLAUDE_PLUGIN_ROOT}/skills/code-slop/SKILL.md`) and the `no-ai-slop` skill (`.agents/skills/no-ai-slop/SKILL.md` in the repo, else `${PLUGIN_ROOT}/skills/no-ai-slop/SKILL.md` or `${CLAUDE_PLUGIN_ROOT}/skills/no-ai-slop/SKILL.md`).
 2. Get the diff (`git diff <base>...HEAD`, where base is `dev` if it exists, else the default branch; or the files you were given).
 3. Code: apply every pattern in `code-slop`. Check that each changed line traces to the request.
 4. Prose in the diff (Markdown, comments, user-facing strings, commit messages): use `no-ai-slop` in
