@@ -1,0 +1,4 @@
+interface:
+  display_name: "/docker-deploy"
+  short_description: "Write and review Dockerfiles, compose files, and container deployments."
+  default_prompt: "Use $docker-deploy to review or harden this Dockerfile and container deployment setup."

@@ -34,4 +34,6 @@ Names in the tables are the bare names from each file's frontmatter, without the
 | marketing | Marketing strategy, positioning, messaging, and campaign planning | kit | active |
 | ads-making | Ad creation covering videography (scripts, shot lists, pacing) and copywriting (angles, variations, CTAs) | kit | active |
 | seo-audit | Technical, on-page, and content SEO strategy and checking | kit | active |
+| ci-cd | CI/CD pipeline design, supply-chain hardening, caching, and release gates | kit | active |
+| docker-deploy | Dockerfile, docker-compose, and container runtime hardening | kit | active |
 | report | `/lumbung:report`: subagent usage on this machine (a command, listed here so the name stays taken) | kit | active |

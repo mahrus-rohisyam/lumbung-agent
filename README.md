@@ -8,14 +8,14 @@ A *lumbung* is the rice barn a village shares: everyone stores in it and takes f
 
 ## Install
 
-Fork this repository to manage your own shared agents and registry, or install directly from `<owner>/lumbung-agent`.
+Fork this repository to manage your own shared agents and registry, or install directly from `mahrus-rohisyam/lumbung-agent`.
 
 ### Claude Code
 
 On each machine, in a Claude Code session:
 
 ```
-/plugin install lumbung --marketplace <owner>/lumbung-agent
+/plugin install lumbung --marketplace <mahrus-rohisyam/lumbung-agent
 ```
 
 Then turn on updates once: `/plugin` → **Marketplaces** → `lumbung-agent` → **Enable auto-update**.
@@ -43,7 +43,7 @@ That's all — Antigravity loads `plugin.json`, `hooks.json`, `rules/AGENTS.md`,
 | | |
 |---|---|
 | Subagents | `lumbung:security-reviewer`, `lumbung:slop-reviewer`, `lumbung:dependency-auditor` |
-| Skills | `lumbung:secure-coding`, `lumbung:code-quality`, `lumbung:code-slop`, `lumbung:no-ai-slop`, `lumbung:dependency-check`, `lumbung:marketing`, `lumbung:ads-making`, `lumbung:seo-audit` |
+| Skills | `lumbung:secure-coding`, `lumbung:code-quality`, `lumbung:code-slop`, `lumbung:no-ai-slop`, `lumbung:dependency-check`, `lumbung:ci-cd`, `lumbung:docker-deploy`, `lumbung:marketing`, `lumbung:ads-making`, `lumbung:seo-audit` |
 | Command | `/lumbung:report`: which subagents ran on this machine, how often, in which repos |
 | Rules | Loaded into every session: check the registry before making an agent, where new agents go |
 | Duplicate guard | Blocks a new agent file that copies an existing agent |

@@ -1,0 +1,4 @@
+interface:
+  display_name: "/ci-cd"
+  short_description: "Design, review, and harden CI/CD workflows and release pipelines."
+  default_prompt: "Use $ci-cd to design or audit this CI/CD pipeline for security, speed, and reliability."
