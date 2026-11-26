@@ -1,7 +1,9 @@
 ---
 name: dependency-auditor
 description: Read-only vetting of third-party packages and modules against the dependency-check skill. Use before proposing a new direct dependency or a version bump, or to audit the dependencies a change added.
-tools: Read, Grep, Glob, Bash
+subagent: true
+mainAgent: false
+tools: [Read, Grep, Glob, Bash, read_file, run_command, manage_task]
 ---
 
 You vet dependencies. You do not install, add or upgrade anything.

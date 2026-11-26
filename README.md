@@ -45,7 +45,8 @@ That's all — Antigravity loads `plugin.json`, `hooks.json`, `rules/AGENTS.md`,
 | Subagents | `lumbung:security-reviewer`, `lumbung:slop-reviewer`, `lumbung:dependency-auditor` |
 | Skills | `lumbung:secure-coding`, `lumbung:code-quality`, `lumbung:code-slop`, `lumbung:no-ai-slop`, `lumbung:dependency-check`, `lumbung:ci-cd`, `lumbung:docker-deploy`, `lumbung:marketing`, `lumbung:ads-making`, `lumbung:seo-audit` |
 | Command | `/lumbung:report`: which subagents ran on this machine, how often, in which repos |
-| Rules | Loaded into every session: check the registry before making an agent, where new agents go |
+| Rules | Loaded into every session (`rules/AGENTS.md`): working habits, orchestration & quality gates, English docs/voice, and registry governance |
+| Scripts | `scripts/clean_unicode.py` (strip/check invisible Unicode watermarks, bidi controls, non-ASCII spaces), `scripts/report.py` |
 | Duplicate guard | Blocks a new agent file that copies an existing agent |
 | Usage log | Every subagent run on this machine, kept in the plugin's data folder |
 

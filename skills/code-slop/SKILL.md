@@ -54,6 +54,10 @@ Slop is code that looks complete but is longer, vaguer or less correct than it n
 - Log lines on every step, emoji in logs, or messages that leak internals to users.
 - Error messages for users: say what happened and what to do, in plain words.
 
+## Deterministic pre-check
+
+Run `python3 "${PLUGIN_ROOT}/scripts/clean_unicode.py" --diff` (fallback: `${CLAUDE_PLUGIN_ROOT}` or `~/lumbung-agent`) to catch invisible Unicode watermarks, bidi controls, and non-ASCII spaces before manual review. Pass `--fix` when cleaning your own diff (add `--ascii-punct` for code files with smart quotes or stray dashes).
+
 ## Size check
 
 Compare the diff to the request. If the change adds more than it needs, cut it. Each changed line should trace back to the request.

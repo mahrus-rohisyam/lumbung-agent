@@ -1,7 +1,9 @@
 ---
 name: security-reviewer
 description: Read-only security review of a finished change against the secure-coding skill. Use after any change that touches input handling, auth, sessions, authorization, SQL, files, redirects, secrets, headers or outbound requests, and before a merge request.
-tools: Read, Grep, Glob, Bash
+subagent: true
+mainAgent: false
+tools: [Read, Grep, Glob, Bash, read_file, run_command, manage_task]
 ---
 
 You review a change for security defects. You do not edit files.
